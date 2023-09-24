@@ -9,10 +9,15 @@
 
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+// import Realtime Database
+import * as admin from "firebase-admin";
+
 import { setGlobalOptions } from "firebase-functions/v2/options";
+const { convert } = require("html-to-text");
+
 // import * as Twit from "twit";
 // const Twit = require("twit");
-import { Scraper } from "@the-convocation/twitter-scraper";
+// import { Scraper } from "@the-convocation/twitter-scraper";
 // import * as URL from "url";
 require("dotenv").config();
 
@@ -29,6 +34,21 @@ require("dotenv").config();
 // https://firebase.google.com/docs/functions/typescript
 
 setGlobalOptions({ maxInstances: 10 });
+admin.initializeApp();
+
+interface Drop {
+  // addr: string;
+  triggerText: string;
+  amount: number;
+  cooldownSeconds: number;
+}
+
+interface Tweet {
+  // tweetId: string;
+  addr: string;
+  tweetText: string;
+  transaction: string;
+}
 
 export const helloWorld = onRequest(async (req, res) => {
   //   logger.write({
@@ -63,9 +83,89 @@ export const helloWorld = onRequest(async (req, res) => {
 
   try {
     // Extract the tweet ID from the URL
-    const tweetID = (req.query["t"] as string) || "1234567890123456789";
+    const tweetUrl =
+      (req.query.t as string) ||
+      `https://twitter.com/NEARProtocol/status/1705350784328593807`;
 
-    // Fetch the tweet using the ID
+    const dropId = (req.query.d as string) || `test`;
+
+    // Read from RTDB
+    const dropData = ((
+      await admin.database().ref(`/drops/${dropId}`).once("value")
+    ).val() as Drop) || {
+      addr: `0xc3E9F4049e5f2cCe41ce9b59a93dC333E104A6a8`,
+      triggerText: `#rewardify`,
+      amount: 1,
+      cooldownSeconds: 60,
+    };
+
+    const addr =
+      (req.query.a as string) || `0xc3E9F4049e5f2cCe41ce9b59a93dC333E104A6a8`;
+
+    const tweet = await fetch(
+      `https://publish.twitter.com/oembed?omit_script=1&url=${encodeURIComponent(
+        tweetUrl
+      )}`
+    );
+    const tweetJson = await tweet.json();
+
+    // res.json(tweetJson);
+    if (!tweetJson.url) {
+      throw new Error(`Tweet ${tweetUrl} not found`);
+    }
+
+    // const authorHandle = tweetJson.author_url.split("/")[3];
+    const tweetId = tweetJson.url.split("/")[5];
+    const tweetText = convert(tweetJson.html, {}) as string;
+
+    let tweetData = (
+      await admin.database().ref(`/tweets/${tweetId}`).once("value")
+    ).val() as Tweet | null;
+
+    if (tweetData) {
+      throw new Error(`Tweet ${tweetId} already claimed`);
+    }
+
+    if (!tweetText.indexOf(dropData.triggerText)) {
+      throw new Error(
+        `Tweet does not contain trigger text ${dropData.triggerText}`
+      );
+    }
+
+    if (!tweetText.indexOf(addr)) {
+      throw new Error(`Tweet does not contain address ${addr}`);
+    }
+
+    const lastClaim =
+      ((
+        await admin.database().ref(`/lastClaim/${dropId}/${addr}`).once("value")
+      ).val() as number) || 0;
+
+    if (
+      lastClaim &&
+      dropData.cooldownSeconds &&
+      Date.now() - lastClaim < dropData.cooldownSeconds * 1000
+    ) {
+      throw new Error(
+        `Address ${addr} already claimed drop ${dropId} in the last ${dropData.cooldownSeconds} seconds`
+      );
+    }
+
+    await admin.database().ref(`/lastClaim/${dropId}/${addr}`).set(Date.now());
+
+    tweetData = {
+      addr,
+      transaction: ``,
+      tweetText,
+    };
+    await admin.database().ref(`/tweets/${tweetId}`).set(tweetData);
+
+    // TODO: Send dropData.amount to addr
+    tweetData.transaction = `...`;
+    await admin.database().ref(`/tweets/${tweetId}`).set(tweetData);
+
+    res.json({ tweetData, dropData });
+
     // const scraper = new Scraper();
     // if (!(await scraper.isLoggedIn())) {
     //   await scraper.login(
@@ -82,10 +182,10 @@ export const helloWorld = onRequest(async (req, res) => {
     //   res.status(200).json({ text: tweet.data.text });
     // } else {
     //   res.status(404).json({ error: "Tweet not found" });
-    }
+    // }
   } catch (error) {
     logger.error(error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
 
   //   logger.info("Hello logs!", { structuredData: true });
