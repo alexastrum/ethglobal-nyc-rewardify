@@ -2,6 +2,8 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
+import "./OptimisticOracleV3Interface.sol";
+
 import "hardhat/console.sol";
 
 /**
@@ -18,7 +20,14 @@ contract YourContract {
 		uint256 deposit;
 	}
 
+	struct AssertedClaim {
+		bytes32 claimId;
+		address dropId;
+		uint256 amount;
+	}
+
 	mapping(address => Drop) internal drops;
+	mapping(address => AssertedClaim) internal claimsInProgress;
 
 	address private owner;
 
@@ -109,10 +118,75 @@ contract YourContract {
 	}
 
 	function triggerDrop(address dropId, address receiver) external {
+		require(dropId == msg.sender || owner == msg.sender, "Not authorized");
+		address dropId = msg.sender;
 		Drop memory drop = drops[dropId];
 		require(drop.deposit > drop.amount, "No deposit to withdraw");
-		drops[msg.sender].deposit -= drop.amount;
+		drops[dropId].deposit -= drop.amount;
 		(bool success, ) = receiver.call{ value: drop.amount }("");
 		require(success, "Failed to send Ether");
+	}
+
+	// Create an Optimistic Oracle V3 instance at the deployed address on Görli.
+	OptimisticOracleV3Interface oov3 =
+		OptimisticOracleV3Interface(0x9923D42eF695B5dd9911D05Ac944d4cAca3c4EAB);
+
+	function propareDropWithAssertedClaim(
+		address dropId,
+		address receiver,
+		string memory assertedClaim
+	) external returns (bytes32) {
+		require(dropId == msg.sender || owner == msg.sender, "Not authorized");
+		Drop memory drop = drops[dropId];
+		require(
+			claimsInProgress[receiver].claimId == bytes32(0),
+			"Another claim in progress"
+		);
+		require(drop.deposit > drop.amount, "No deposit to withdraw");
+		drops[dropId].deposit -= drop.amount;
+		claimsInProgress[receiver] = AssertedClaim(
+			oov3.assertTruthWithDefaults(bytes(assertedClaim), address(this)),
+			dropId,
+			drop.amount
+		);
+	}
+
+	function settleMyLastAssertion() external {
+		address receiver = msg.sender;
+		AssertedClaim memory assertedClaim = claimsInProgress[receiver];
+		require(
+			assertedClaim.claimId != bytes32(0),
+			"No claim in progress for sender"
+		);
+		require(
+			oov3.settleAndGetAssertionResult(assertedClaim.claimId),
+			"Claim not settled"
+		);
+		delete claimsInProgress[receiver];
+		(bool success, ) = receiver.call{ value: assertedClaim.amount }("");
+		require(success, "Failed to send Ether");
+	}
+
+	function revertMyLastAssertion() external {
+		address receiver = msg.sender;
+		AssertedClaim memory assertedClaim = claimsInProgress[receiver];
+		require(
+			assertedClaim.claimId != bytes32(0),
+			"No claim in progress for sender"
+		);
+		drops[assertedClaim.dropId].deposit += assertedClaim.amount;
+		delete claimsInProgress[receiver];
+	}
+
+	// Return the full assertion object contain all information associated with the assertion. Can be called any time.
+	function getLastAssertion(
+		address receiver
+	) public view returns (OptimisticOracleV3Interface.Assertion memory) {
+		AssertedClaim memory assertedClaim = claimsInProgress[receiver];
+		require(
+			assertedClaim.claimId != bytes32(0),
+			"No claim in progress for sender"
+		);
+		return oov3.getAssertion(assertedClaim.claimId);
 	}
 }
