@@ -64,6 +64,20 @@ contract Owner {
         return owner;
     }
 
+    /**
+     * Function that allows the owner to withdraw all the Ether in the contract
+     * The function can only be called by the owner of the contract as defined by the isOwner modifier
+     */
+    function withdrawAll() public isOwner {
+        (bool success, ) = owner.call{value: address(this).balance}("");
+        require(success, "Failed to send Ether");
+    }
+
+    /**
+     * Function that allows the contract to receive ETH
+     */
+    receive() external payable {}
+
     function setDrop(
         bytes32 triggerText,
         uint256 amount,
@@ -92,13 +106,15 @@ contract Owner {
         Drop memory drop = drops[msg.sender];
         require(drop.deposit > 0, "No deposit to withdraw");
         drops[msg.sender].deposit = 0;
-        payable(msg.sender).transfer(drop.amount);
+        (bool success, ) = msg.sender.call{value: drop.deposit}("");
+        require(success, "Failed to send Ether");
     }
 
     function triggerDrop(address dropId, address receiver) external isOwner {
         Drop memory drop = drops[dropId];
         require(drop.deposit > drop.amount, "No deposit to withdraw");
         drops[msg.sender].deposit -= drop.amount;
-        payable(receiver).transfer(drop.amount);
+        (bool success, ) = receiver.call{value: drop.amount}("");
+        require(success, "Failed to send Ether");
     }
 }
