@@ -119,7 +119,6 @@ contract YourContract {
 
 	function triggerDrop(address dropId, address receiver) external {
 		require(dropId == msg.sender || owner == msg.sender, "Not authorized");
-		address dropId = msg.sender;
 		Drop memory drop = drops[dropId];
 		require(drop.deposit > drop.amount, "No deposit to withdraw");
 		drops[dropId].deposit -= drop.amount;
