@@ -15,6 +15,16 @@ const deployerPrivateKey =
 // If not set, it uses ours Etherscan default API key.
 const etherscanApiKey = process.env.ETHERSCAN_API_KEY || "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW";
 
+const proxy_url = "https://devnet.neonevm.org";
+const network_id = 245022926;
+
+// Private keys for test accounts
+// NOTE: Replace this private keys by your own and make sure it has non-zero NEON balances
+const privateKeys = [
+  "0xf5c746b15e3bdd6bf8c516031a15de16ea161ce10552635abb27c9bd16e0a04a",
+  "0x41ac2becab52d55cb204c65366c3475189064d1d612cc2552103b96de0909ec4",
+];
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.17",
@@ -106,10 +116,32 @@ const config: HardhatUserConfig = {
       url: "https://goerli.base.org",
       accounts: [deployerPrivateKey],
     },
+    neonlabs: {
+      url: proxy_url,
+      accounts: privateKeys,
+      // network_id: network_id,
+      chainId: network_id,
+      allowUnlimitedContractSize: false,
+      timeout: 1000000,
+      // isFork: true,
+    },
   },
   verify: {
     etherscan: {
       apiKey: `${etherscanApiKey}`,
+      // apiKey: {
+      //   neonevm: "test"
+      // },
+      // customChains: [
+      //   {
+      //     network: "neonevm",
+      //     chainId: 245022926,
+      //     urls: {
+      //       apiURL: "https://devnet-api.neonscan.org/hardhat/verify",
+      //       browserURL: "https://devnet.neonscan.org",
+      //     },
+      //   },
+      // ],
     },
   },
 };

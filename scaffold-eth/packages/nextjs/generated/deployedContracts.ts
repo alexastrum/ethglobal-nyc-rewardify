@@ -792,6 +792,169 @@ const contracts = {
       },
     },
   ],
+  245022926: [
+    {
+      chainId: "245022926",
+      name: "neonlabs",
+      contracts: {
+        YourContract: {
+          address: "0x32D786463A3f454904566A9b7957856A332d4c60",
+          abi: [
+            {
+              inputs: [],
+              stateMutability: "nonpayable",
+              type: "constructor",
+            },
+            {
+              anonymous: false,
+              inputs: [
+                {
+                  indexed: true,
+                  internalType: "address",
+                  name: "oldOwner",
+                  type: "address",
+                },
+                {
+                  indexed: true,
+                  internalType: "address",
+                  name: "newOwner",
+                  type: "address",
+                },
+              ],
+              name: "OwnerSet",
+              type: "event",
+            },
+            {
+              inputs: [
+                {
+                  internalType: "address",
+                  name: "newOwner",
+                  type: "address",
+                },
+              ],
+              name: "changeOwner",
+              outputs: [],
+              stateMutability: "nonpayable",
+              type: "function",
+            },
+            {
+              inputs: [
+                {
+                  internalType: "address",
+                  name: "user",
+                  type: "address",
+                },
+              ],
+              name: "getDrop",
+              outputs: [
+                {
+                  components: [
+                    {
+                      internalType: "string",
+                      name: "triggerText",
+                      type: "string",
+                    },
+                    {
+                      internalType: "uint256",
+                      name: "amount",
+                      type: "uint256",
+                    },
+                    {
+                      internalType: "uint256",
+                      name: "cooldownSeconds",
+                      type: "uint256",
+                    },
+                    {
+                      internalType: "uint256",
+                      name: "deposit",
+                      type: "uint256",
+                    },
+                  ],
+                  internalType: "struct YourContract.Drop",
+                  name: "",
+                  type: "tuple",
+                },
+              ],
+              stateMutability: "view",
+              type: "function",
+            },
+            {
+              inputs: [],
+              name: "getOwner",
+              outputs: [
+                {
+                  internalType: "address",
+                  name: "",
+                  type: "address",
+                },
+              ],
+              stateMutability: "view",
+              type: "function",
+            },
+            {
+              inputs: [
+                {
+                  internalType: "string",
+                  name: "triggerText",
+                  type: "string",
+                },
+                {
+                  internalType: "uint256",
+                  name: "amount",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "cooldownSeconds",
+                  type: "uint256",
+                },
+              ],
+              name: "setDrop",
+              outputs: [],
+              stateMutability: "payable",
+              type: "function",
+            },
+            {
+              inputs: [
+                {
+                  internalType: "address",
+                  name: "dropId",
+                  type: "address",
+                },
+                {
+                  internalType: "address",
+                  name: "receiver",
+                  type: "address",
+                },
+              ],
+              name: "triggerDrop",
+              outputs: [],
+              stateMutability: "nonpayable",
+              type: "function",
+            },
+            {
+              inputs: [],
+              name: "withdraw",
+              outputs: [],
+              stateMutability: "nonpayable",
+              type: "function",
+            },
+            {
+              inputs: [],
+              name: "withdrawAll",
+              outputs: [],
+              stateMutability: "nonpayable",
+              type: "function",
+            },
+            {
+              stateMutability: "payable",
+              type: "receive",
+            },
+          ],
+        },
+      },
+    },
+  ],
 } as const;
 
 export default contracts;

@@ -9,6 +9,7 @@ Every project, company, collective, or individual has a community. Most fail to 
 - XMTP: https://github.com/alexastrum/ethglobal-nyc-rewardify/blob/main/xmtp-bot/index.ts
 - Gnosis Chain Chiado smart contract: 0x1CB2c332D190EED0Ba8A61c81d68a82b91321aD9
 - Gorli smart contract (with OptimisticOracleV3): 0xD07Fe37392a8240A661DD10E025d8A4a33B20459
+- NEON EVM smart contract: 0x32D786463A3f454904566A9b7957856A332d4c60
 - NEAR: https://near.social/a13x.near/widget/ethglobal-nyc-rewardify-drop
 
 ## What we tried
